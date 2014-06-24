@@ -1,28 +1,37 @@
 var express = require("express"),
-    nano = require('nano')('http://localhost:5984'),
+    sqlite3 = require('sqlite3').verbose(),
     app = express();
 
-nano.db.destroy('test');
-nano.db.create('test');
+/* Prepping SQLite */
+var db = new sqlite3.Database(':memory:');
+db.run("DROP TABLE IF EXISTS Foo", function(err, row) {
+  if (err) { console.log(err); }
+});
+db.run("CREATE TABLE Foo(name TEXT)", function(err, row) {
+  if (err) { console.log(err); }
+});
 
-var db = nano.db.use('test');
-
+/* Routes */
 app.get("/", function (req, res) {
   res.send("Hey buddy!");
 });
 
 app.get("/:name", function (req, res) {
-  db.get(req.params.name, function (err, body) {
-    if (body === undefined) {
-      db.insert({'name': req.params.name}, req.params.name, function(err, b) {
-        if (err) {
-          res.send(500);
-        } else {
-          res.send("Created a new thing with name " + req.params.name);
-        }
+  db.get("SELECT name FROM Foo", function (err, row) {
+    console.log(err);
+    if (row === undefined) {
+      db.serialize(function() {
+        db.run("INSERT INTO Foo(name) VALUES('" + req.params.name + "')", function(err, row) {
+          if (err) {
+            res.send(500);
+          } else {
+            res.send("Created a new thing with name " + req.params.name);
+          }
+        });
       });
     } else {
-      res.send(body);
+      res.send(row);
+      db.close();
     }
   });
 });

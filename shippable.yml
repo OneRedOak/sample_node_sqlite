@@ -5,10 +5,6 @@ language: node_js
 node_js:
   - 0.10.25
 
-# CouchDB binds to 127.0.0.1 by default
-services:
-  - couchdb
-
 # The path for Xunit to output test reports
 env:
   - XUNIT_FILE=shippable/testresults/result.xml
